@@ -1,0 +1,37 @@
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
+from fastapi import UploadFile
+from app.models.auth import userRole
+
+class UserCreate(BaseModel):
+    full_name: str = Field(..., min_length=1, max_length=100)
+    email: EmailStr
+    image_url: UploadFile
+    role: Optional[userRole] = userRole.STUDENT
+    password: str = Field(..., min_length=6)
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+
+
+class UserResponse(BaseModel):
+    id: str
+    full_name: str
+    email: EmailStr
+    role: userRole
+    image_url: str | None = None
+    coins: int = 0  # Default to 0 for backwards compatibility
+
+    class Config:
+        from_attributes = True
+
+
+class UserOut(BaseModel):
+    id: str
+    full_name: str
+    email: EmailStr
+
+    class Config:
+        from_attributes = True

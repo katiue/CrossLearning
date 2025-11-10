@@ -1,0 +1,68 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.router.auth import router as auth_router
+from app.router.chat_with_pdf import router as chat_with_pdf
+from app.router.teacherInsight import router as teacher_insight_router
+from app.router.group import router as group_router
+from app.router.generate_notes import router as generate_notes_router
+from app.router.notes import router as notes_router
+from app.router.interviewPerp import router as interview_prep_router
+from app.router.docsupload import router as docsupload_router
+from app.router.studentInsight import router as student_insight_router
+from app.router.assignment import router as assignment_router
+from app.router.generate_assignment import router as generate_assignment_router
+from app.router.ai_evaluator import router as ai_evaluator_router
+from app.router.submission import router as submission_router
+from app.router.teachSession import router as teach_session_router
+from app.router.peerLearning import router as peer_learning_router
+from app.router.websocket import sio  # Import the Socket.IO server instance
+from app.config.db import Base, engine
+from app.models import auth, notes, teacherInsight, teachSession, assignment, docsupload, InterviewPreparation, studentInsight, peerLearning
+import socketio
+
+app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+           "http://localhost:5173",
+           "http://127.0.0.1:5173",
+           "http://192.168.1.221:5173",  # Your local network IP
+           "http://192.168.1.221:8000",  # Backend on local network
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Base.metadata.create_all(bind=engine)
+
+@app.on_event("startup")
+def on_startup():
+    print("Creating database tables (if not exist)...")
+    Base.metadata.create_all(bind=engine)
+
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(chat_with_pdf, prefix="/pdf", tags=["PDF Chat"])
+app.include_router(teacher_insight_router, prefix="/insights", tags=["Teacher Insights"])
+app.include_router(group_router, prefix="/groups", tags=["Groups"])
+app.include_router(generate_notes_router, prefix="/notes", tags=["Generate Notes"])
+app.include_router(notes_router, prefix="/notes", tags=["Notes"])
+app.include_router(student_insight_router, prefix="/student-insight", tags=["Student Insights"])
+app.include_router(interview_prep_router, prefix="/interview-prep", tags=["Interview Preparation"])
+app.include_router(docsupload_router, prefix="/docs", tags=["Document Upload"])
+app.include_router(assignment_router, prefix="/assignments", tags=["Assignments"])
+app.include_router(generate_assignment_router, prefix="/assignments", tags=["Generate Assignment"])
+app.include_router(ai_evaluator_router, prefix="/ai-evaluator", tags=["AI Evaluator"])
+app.include_router(submission_router, prefix="/submissions", tags=["Submissions"])
+app.include_router(teach_session_router, prefix="/teach-sessions", tags=["Teach-to-Learn Sessions"])
+app.include_router(peer_learning_router, prefix="/peer-learning", tags=["Peer Learning"])
+
+# Wrap FastAPI app with Socket.IO
+socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/socket.io')
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the CrossLearning API"}
